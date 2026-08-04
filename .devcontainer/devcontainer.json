@@ -1,7 +1,7 @@
 {
   "name": "Rust Power User",
-  "image": "mcr.microsoft.com/devcontainers/rust:latest",
-  
+  "image": "mcr.microsoft.com/devcontainers/rust:1-bookworm",
+
   "customizations": {
     "vscode": {
       "extensions": [
@@ -13,24 +13,44 @@
         "serayuzgur.crates",
         "usernamehw.errorlens",
         "eamodio.gitlens",
-        "ms-vscode.hexeditor"
+        "ms-vscode.hexeditor",
+        "streetsidesoftware.code-spell-checker",
+        "ms-azuretools.vscode-docker"
       ],
       "settings": {
         "rust-analyzer.check.command": "clippy",
         "rust-analyzer.checkOnSave": true,
         "rust-analyzer.cargo.allFeatures": true,
+        "rust-analyzer.imports.granularity.group": "module",
+        "rust-analyzer.procMacro.enable": true,
         "editor.formatOnSave": true,
         "editor.inlayHints.enabled": "on",
         "files.insertFinalNewline": true,
         "terminal.integrated.defaultProfile.linux": "zsh",
-        "rust-analyzer.procMacro.enable": true
+        "[rust]": {
+          "editor.defaultFormatter": "rust-lang.rust-analyzer"
+        }
       }
     }
   },
 
-  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y zsh ripgrep fd-find bat git-delta hyperfine valgrind lldb && sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\" \"\" --unattended && cargo install --locked cargo-binstall && cargo binstall -y --locked cargo-nextest cargo-edit cargo-watch cargo-expand cargo-outdated cargo-audit cargo-udeps cargo-semver-checks cargo-flamegraph cargo-llvm-lines cargo-tarpaulin && rustup component add rustfmt clippy rust-src rust-analyzer && echo '🚀 Rust Power User Environment loaded successfully!' && echo 'export PATH=$PATH:/usr/local/cargo/bin' >> ~/.zshrc",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installOhMyZsh": true,
+      "configureZshAsDefaultShell": true
+    },
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "latest",
+      "profile": "default"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
 
-  "postStartCommand": "rustc --version && cargo --version && cargo nextest --version",
+  "mounts": [
+    "source=${localWorkspaceFolderBasename}-cargo-cache,target=/usr/local/cargo/registry,type=volume",
+    "source=${localWorkspaceFolderBasename}-target-cache,target=${containerWorkspaceFolder}/target,type=volume"
+  ],
 
   "containerEnv": {
     "CARGO_INCREMENTAL": "1",
@@ -40,7 +60,8 @@
   },
 
   "remoteUser": "vscode",
-  "mounts": [
-    "source=${localEnv:HOME}/.cargo/registry,target=/usr/local/cargo/registry,type=bind,consistency=cached"
-  ]
+
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y ripgrep fd-find bat git-delta hyperfine valgrind lldb && rustup component add rustfmt clippy rust-src && cargo install --locked cargo-binstall && cargo binstall -y --locked cargo-nextest cargo-edit cargo-watch cargo-expand cargo-outdated cargo-audit cargo-udeps cargo-semver-checks cargo-flamegraph cargo-llvm-lines cargo-tarpaulin sccache && echo 'export RUSTC_WRAPPER=sccache' >> ~/.zshrc && echo '🚀 Rust Power User Environment loaded successfully!'",
+
+  "postStartCommand": "rustc --version && cargo --version && cargo nextest --version"
 }
