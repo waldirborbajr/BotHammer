@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">
 
-  BanHammer - detects and bans users who post ilicity content
+  BotHammer - detects and bans users who post ilicity content
 </h1>
 
 **Automatic moderation bot for Telegram** — detects and bans users who post pornographic content, gambling/betting promotions, commercial spam, child exploitation (CSAM) content, and other illicit material in groups.
@@ -16,7 +16,7 @@
 
 ## ✨ Overview
 
-**BanHammer** monitors messages in a Telegram group in real time. When a message (text or media caption) matches patterns associated with prohibited content, the bot:
+**BotHammer** monitors messages in a Telegram group in real time. When a message (text or media caption) matches patterns associated with prohibited content, the bot:
 
 1. **Deletes** the message immediately;
 2. **Bans** the message's author from the group;
