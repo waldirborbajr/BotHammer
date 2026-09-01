@@ -47,11 +47,16 @@
   },
 
   "mounts": [
-    "source=${localWorkspaceFolderBasename}-cargo-cache,target=/usr/local/cargo/registry,type=volume",
-    "source=${localWorkspaceFolderBasename}-target-cache,target=${containerWorkspaceFolder}/target,type=volume"
+    "source=${localWorkspaceFolderBasename}-cargo-cache,target=/usr/local/cargo/registry,type=volume"
+    // Remove the target cache mount - it causes permission issues
   ],
 
   "remoteUser": "vscode",
 
-  "postStartCommand": "echo '✅ Rust DevContainer ready!' && rustc --version"
+  "postStartCommand": "echo '✅ Rust DevContainer ready!' && rustc --version",
+
+  "containerEnv": {
+    "SCCACHE_DIR": "/usr/local/cargo/sccache",
+    "SCCACHE_CACHE_SIZE": "50G"
+  }
 }

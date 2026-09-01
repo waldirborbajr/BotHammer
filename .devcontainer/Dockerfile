@@ -47,8 +47,8 @@ RUN cargo binstall -y --locked \
 # ==========================================
 # 3. Set global environment variables
 # ==========================================
-ENV CARGO_INCREMENTAL=1 \
-    RUST_BACKTRACE=1 \
+# Note: CARGO_INCREMENTAL is removed because sccache handles caching better
+ENV RUST_BACKTRACE=1 \
     RUSTFLAGS="-D warnings" \
     CARGO_TERM_COLOR=always \
     RUSTC_WRAPPER=sccache
