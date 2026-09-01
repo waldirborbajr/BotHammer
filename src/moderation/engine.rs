@@ -1,6 +1,6 @@
 use crate::{core::state::AppState, telegram::events::TelegramEvent};
 
-use super::{csam, gambling, links, pornography, regex::normalize_text, spam};
+use super::{bayes, csam, gambling, links, pornography, regex::normalize_text, spam};
 
 pub use super::violation::ViolationType;
 
@@ -46,6 +46,26 @@ pub async fn analyze_message(
 
     if spam::is_spam(&normalized, &rules.spam.keywords) {
         return Some(ViolationType::Spam);
+    }
+
+    //
+    // Sinal probabilístico (Naive Bayes), complementar às keywords
+    // acima: pega spam que nunca bate literalmente com uma keyword
+    // de moderation.toml mas tem a "cara" estatística do dataset de
+    // treino. Mensagens curtas demais (`min_tokens`) são ignoradas —
+    // pouco texto não dá sinal suficiente pro modelo.
+    //
+    if rules.bayes.enabled && bayes::token_count(&normalized) >= rules.bayes.min_tokens {
+        let spam_probability = state.bayes.spam_probability(&normalized);
+
+        if spam_probability >= rules.bayes.threshold {
+            log::debug!(
+                "classificador bayesiano marcou mensagem como spam (probabilidade {:.3})",
+                spam_probability
+            );
+
+            return Some(ViolationType::Spam);
+        }
     }
 
     drop(rules);

@@ -56,6 +56,13 @@ Roadmap de features sugeridas, organizadas por área. Não estão em ordem de pr
 
 ## Detecção mais robusta
 
+- [x] **Classificador Naive Bayes (Multinomial) de spam**, complementar à detecção por palavra-chave.
+  Implementado: `moderation::bayes` (`vectorizer.rs` — bag-of-words próprio; `dataset.rs` — corpus de treino pt/en/es embutido no binário; `classifier.rs` — `SpamClassifier` sobre `linfa`/`linfa-bayes`, os pacotes nativos do ecossistema Rust ML). Treinado uma única vez no boot (`AppState::new`) a partir de `dataset::TRAINING_DATA`; `engine::analyze_message` consulta `state.bayes.spam_probability(...)` como sinal extra, em paralelo a `spam::is_spam`, controlado por `[bayes]` em `moderation.toml` (`enabled`, `threshold`, `min_tokens` — recarregáveis via `/reload`).
+  _Esforço: médio · Impacto: médio_
+  → **Assumido:** o dataset de treino é um ponto de partida pequeno, escrito à mão — não há dado real de nenhum grupo. Sem re-treino em runtime: o modelo (pesos) só é gerado no boot; mudar o dataset exige reiniciar o processo. `threshold = 0.90` por padrão é conservador de propósito, justamente por causa do corpus pequeno.
+  → **Não implementado ainda (próximo passo natural):** comando de admin pra rotular mensagens reais do grupo (`/trainspam`/`/trainham` em reply, por exemplo) e persistir esse corpus em SQLite, permitindo re-treino via `/reload` sem precisar editar `dataset.rs` e recompilar. Sem isso, a precisão do modelo não melhora sozinha com o uso do bot.
+  → Não usei `linfa-preprocessing::CountVectorizer` (que também faria o bag-of-words) porque ele devolve uma matriz esparsa (`sprs::CsMat`) e puxaria mais uma dependência (`sprs`) só pra depois converter pra denso antes do `linfa-bayes::MultinomialNb` — preferi um `Vocabulary` bag-of-words próprio, pequeno e sem dependência extra, mantendo `linfa`/`linfa-bayes` (o algoritmo em si) como os pacotes nativos priorizados.
+
 - [ ] **Normalização anti-evasão mais forte** em `normalize_text` (leetspeak, espaçamento entre letras, caracteres Unicode visualmente parecidos).
   Contorna o truque mais comum de burlar filtro de texto.
   _Esforço: médio · Impacto: alto_

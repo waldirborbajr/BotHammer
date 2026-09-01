@@ -18,6 +18,8 @@ pub struct ModerationRules {
     pub strikes: StrikesConfig,
 
     pub trust: TrustConfig,
+
+    pub bayes: BayesConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -72,6 +74,53 @@ pub struct TrustConfig {
     /// que o usuário confiável precisa de o dobro de violações
     /// recentes para sofrer a mesma punição que um usuário comum.
     pub strikes_multiplier: u32,
+}
+
+/// Configuração do classificador Naive Bayes de spam
+/// (`moderation::bayes`).
+///
+/// O modelo em si (pesos treinados a partir de
+/// `bayes::dataset::TRAINING_DATA`) é treinado uma única vez no boot
+/// e não é afetado por `/reload` — só estes dois parâmetros de
+/// política são recarregáveis em runtime junto do resto do
+/// `moderation.toml`.
+#[derive(Debug, Deserialize, Clone)]
+pub struct BayesConfig {
+    /// Liga/desliga o classificador sem precisar remover a seção do
+    /// TOML nem recompilar o bot.
+    pub enabled: bool,
+
+    /// Probabilidade mínima (0.0–1.0, exclusivo de zero) de "spam"
+    /// estimada pelo modelo para a mensagem virar
+    /// `ViolationType::Spam`. Mais alto = menos falsos positivos,
+    /// porém mais spam sutil passa batido.
+    pub threshold: f64,
+
+    /// Número mínimo de tokens (após normalização) que uma mensagem
+    /// precisa ter para ser avaliada pelo classificador. Mensagens
+    /// muito curtas ("oi", "kkkk", "👍") carregam pouquíssimo sinal
+    /// estatístico e tendem a gerar falsos positivos.
+    pub min_tokens: usize,
+}
+
+impl BayesConfig {
+    fn validate(&self) -> Result<(), ValidationError> {
+        if !(self.threshold > 0.0 && self.threshold <= 1.0) {
+            return Err(ValidationError {
+                section: "bayes",
+                reason: Some("threshold precisa estar entre 0.0 (exclusivo) e 1.0 (inclusivo)"),
+            });
+        }
+
+        if self.min_tokens < 1 {
+            return Err(ValidationError {
+                section: "bayes",
+                reason: Some("min_tokens precisa ser >= 1"),
+            });
+        }
+
+        Ok(())
+    }
 }
 
 /// Erro de validação de configuração de moderação.
@@ -153,6 +202,8 @@ impl ModerationRules {
         self.strikes.validate()?;
 
         self.trust.validate()?;
+
+        self.bayes.validate()?;
 
         Ok(())
     }

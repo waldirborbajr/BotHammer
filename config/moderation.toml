@@ -188,6 +188,24 @@ mute_duration_minutes = 60
 # O Telegram exige pelo menos 31s (abaixo disso o ban vira permanente).
 kick_ban_seconds = 35
 
+# Classificador Naive Bayes (Multinomial) de spam — complementa a
+# detecção por palavra-chave da seção [spam] com um sinal
+# probabilístico, treinado a partir de um corpus embutido no binário
+# (src/moderation/bayes/dataset.rs). Não substitui [spam]: os dois
+# rodam em paralelo em engine.rs, e qualquer um dos dois classifica a
+# mensagem como ViolationType::Spam.
+[bayes]
+# Liga/desliga o classificador sem remover a seção.
+enabled = true
+# Probabilidade mínima (0.0–1.0) de spam estimada pelo modelo para a
+# mensagem ser tratada como violação. Conservador por padrão — o
+# dataset de treino embutido é pequeno, então um limiar alto reduz o
+# risco de falso positivo em conversa normal do grupo.
+threshold = 0.90
+# Mensagens com menos tokens que isso (após normalização) não passam
+# pelo classificador — pouco texto = pouco sinal estatístico.
+min_tokens = 4
+
 # Whitelist de usuários confiáveis: membros antigos e sem histórico de
 # violação recebem checagem mais branda. NÃO afeta csam/pornografia/link
 # suspeito (zero tolerância) — só relaxa a escada de strikes de

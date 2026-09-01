@@ -1,6 +1,6 @@
 [package]
 name = "banhammer"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.85"
 
@@ -16,6 +16,19 @@ sqlx = { version = "0.9.0", features = ["runtime-tokio", "sqlite"] }
 serde = { version = "1", features = ["derive"] }
 toml = "1.1.3"
 chrono = "0.4"
+
+# Classificador Naive Bayes de spam (src/moderation/bayes) —
+# pacotes nativos do ecossistema Rust ML, em vez de uma
+# implementação artesanal do algoritmo.
+linfa = "0.8"
+linfa-bayes = "0.8"
+# Pin exato (não "0.16" solto): o linfa/linfa-bayes 0.8.1 usam
+# ndarray 0.16.1 internamente. Sem o pin exato, o Cargo pode
+# resolver um ndarray 0.17.x separado pra esta crate (visto em
+# build real: "Adding ndarray v0.17.2"), gerando dois ArrayBase
+# incompatíveis no grafo (0.16.x tem 2 parâmetros de tipo, 0.17.x
+# tem 3) e erros de tipo em Dataset::new/predict_log_proba.
+ndarray = "=0.16.1"
 
 [profile.release]
 # === Otimizações de VELOCIDADE ===

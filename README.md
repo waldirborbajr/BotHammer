@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">
 
-  BotHammer - detects and bans users who post ilicity content
+  BanHammer - detects and bans users who post ilicity content
 </h1>
 
 **Automatic moderation bot for Telegram** — detects and bans users who post pornographic content, gambling/betting promotions, commercial spam, child exploitation (CSAM) content, and other illicit material in groups.
@@ -16,7 +16,7 @@
 
 ## ✨ Overview
 
-**BotHammer** monitors messages in a Telegram group in real time. When a message (text or media caption) matches patterns associated with prohibited content, the bot:
+**BanHammer** monitors messages in a Telegram group in real time. When a message (text or media caption) matches patterns associated with prohibited content, the bot:
 
 1. **Deletes** the message immediately;
 2. **Bans** the message's author from the group;
@@ -32,7 +32,7 @@ The current filter is based on case-insensitive regular expressions organized by
 |---|---|
 | Pornography / sexual content | `porn`, `nudes`, `onlyfans`, `xxx`, explicit sexual terms (in Portuguese) |
 | Gambling / Betting | `bet`, `aposta`, `cassino`, `roleta`, `odds`, `bet365` |
-| Commercial spam / sales | `compre agora`, `promoção`, `desconto`, `revenda`, `frete` |
+| Commercial spam / sales | `compre agora`, `promoção`, `desconto`, `revenda`, `frete` — plus a Naive Bayes classifier (`src/moderation/bayes/`) as a probabilistic backup for spam that doesn't match any keyword |
 | Child exploitation / CSAM | terms associated with child sexual exploitation |
 | Suspicious links | `pornhub`, `xvideos`, link shorteners (`bit.ly`, `tinyurl`) |
 
@@ -43,6 +43,7 @@ The current filter is based on case-insensitive regular expressions organized by
 - **[Rust](https://www.rust-lang.org/)** (edition 2024)
 - **[teloxide](https://github.com/teloxide/teloxide)** — Telegram bot framework
 - **[tokio](https://tokio.rs/)** — async runtime
+- **[linfa](https://github.com/rust-ml/linfa) / [linfa-bayes](https://crates.io/crates/linfa-bayes)** — Multinomial Naive Bayes classifier used as a probabilistic spam signal
 - **regex** + **lazy_static** — pattern-matching engine
 - **pretty_env_logger** / **log** — structured logging
 

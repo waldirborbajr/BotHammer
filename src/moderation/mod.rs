@@ -1,3 +1,4 @@
+pub mod bayes;
 pub mod csam;
 pub mod engine;
 pub mod gambling;
