@@ -10,10 +10,20 @@
 //! `classifier::SpamClassifier`), não uma implementação artesanal de
 //! Naive Bayes.
 //!
-//! Liga/desliga e limiar de confiança ficam em `[bayes]` no
-//! `moderation.toml`, recarregáveis via `/reload` — só o modelo em si
-//! (pesos treinados) não é reciclado em runtime nesta versão, ver
-//! `TODO.md`.
+//! O dataset de treino é a combinação de duas fontes:
+//! - `seed_examples()`: um corpus semente pequeno, embutido no
+//!   binário (`dataset::TRAINING_DATA`) — garante que o classificador
+//!   funcione desde o primeiro boot, sem configuração nenhuma.
+//! - Exemplos ensinados por admins via `/trainspam`/`/trainham`,
+//!   persistidos em SQLite (`storage::sqlite::bayes_training_examples`)
+//!   — é assim que o modelo melhora com o uso real de cada grupo,
+//!   sem precisar editar código nem recompilar.
+//!
+//! Quem junta as duas fontes e treina o modelo é
+//! `core::state::AppState::train_bayes` — no boot, em todo `/reload`
+//! e a cada exemplo novo ensinado. Liga/desliga, limiar de confiança
+//! e hiperparâmetros (`alpha`, `max_features`) ficam em `[bayes]` no
+//! `moderation.toml`.
 
 mod classifier;
 mod dataset;
@@ -22,9 +32,12 @@ mod vectorizer;
 pub use classifier::SpamClassifier;
 pub use vectorizer::token_count;
 
-/// Treina o classificador padrão a partir do dataset embutido no
-/// binário (`dataset::TRAINING_DATA`). Chamado uma única vez em
-/// `AppState::new`.
-pub fn build_default() -> Result<SpamClassifier, Box<dyn std::error::Error + Send + Sync>> {
-    SpamClassifier::train(dataset::TRAINING_DATA)
+/// Cópia (owned) do dataset semente embutido no binário — ponto de
+/// partida sempre presente no treino, complementado pelos exemplos
+/// persistidos em SQLite. Ver documentação do módulo.
+pub fn seed_examples() -> Vec<(String, bool)> {
+    dataset::TRAINING_DATA
+        .iter()
+        .map(|(text, is_spam)| (text.to_string(), *is_spam))
+        .collect()
 }

@@ -205,6 +205,15 @@ threshold = 0.90
 # Mensagens com menos tokens que isso (após normalização) não passam
 # pelo classificador — pouco texto = pouco sinal estatístico.
 min_tokens = 4
+# Suavização de Laplace (aditiva) do Multinomial Naive Bayes. 1.0 é o
+# padrão usual (add-one smoothing); só vale mexer se souber o que
+# está fazendo.
+alpha = 1.0
+# Número máximo de termos mantidos no vocabulário bag-of-words. O
+# dataset atual (semente + exemplos ensinados via /trainspam e
+# /trainham) gera bem menos que isso — o teto existe pra quando o
+# corpus crescer bastante com o uso do bot.
+max_features = 8000
 
 # Whitelist de usuários confiáveis: membros antigos e sem histórico de
 # violação recebem checagem mais branda. NÃO afeta csam/pornografia/link

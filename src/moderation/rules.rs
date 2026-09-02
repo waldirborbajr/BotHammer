@@ -79,11 +79,10 @@ pub struct TrustConfig {
 /// Configuração do classificador Naive Bayes de spam
 /// (`moderation::bayes`).
 ///
-/// O modelo em si (pesos treinados a partir de
-/// `bayes::dataset::TRAINING_DATA`) é treinado uma única vez no boot
-/// e não é afetado por `/reload` — só estes dois parâmetros de
-/// política são recarregáveis em runtime junto do resto do
-/// `moderation.toml`.
+/// Todos os campos são recarregáveis em runtime via `/reload`, junto
+/// do resto do `moderation.toml` — inclusive `alpha`/`max_features`,
+/// que fazem `AppState::reload_moderation` retreinar o modelo com os
+/// novos hiperparâmetros. Ver `core::state::AppState::train_bayes`.
 #[derive(Debug, Deserialize, Clone)]
 pub struct BayesConfig {
     /// Liga/desliga o classificador sem precisar remover a seção do
@@ -101,6 +100,17 @@ pub struct BayesConfig {
     /// muito curtas ("oi", "kkkk", "👍") carregam pouquíssimo sinal
     /// estatístico e tendem a gerar falsos positivos.
     pub min_tokens: usize,
+
+    /// Suavização de Laplace (aditiva) do Multinomial Naive Bayes —
+    /// evita probabilidade zero para termos que nunca apareceram numa
+    /// classe durante o treino. `1.0` é o padrão usual.
+    pub alpha: f64,
+
+    /// Número máximo de termos mantidos no vocabulário bag-of-words
+    /// (`moderation::bayes::vectorizer::Vocabulary`) — os mais
+    /// frequentes no dataset de treino são priorizados quando o
+    /// corpus ultrapassa esse limite.
+    pub max_features: usize,
 }
 
 impl BayesConfig {
@@ -116,6 +126,20 @@ impl BayesConfig {
             return Err(ValidationError {
                 section: "bayes",
                 reason: Some("min_tokens precisa ser >= 1"),
+            });
+        }
+
+        if self.alpha <= 0.0 {
+            return Err(ValidationError {
+                section: "bayes",
+                reason: Some("alpha precisa ser > 0.0"),
+            });
+        }
+
+        if self.max_features < 1 {
+            return Err(ValidationError {
+                section: "bayes",
+                reason: Some("max_features precisa ser >= 1"),
             });
         }
 

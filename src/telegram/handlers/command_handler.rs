@@ -38,6 +38,10 @@ pub async fn command_handler(
         Command::BlockDomain(argument) => {
             commands::blockdomain::handle(&bot, &msg, &state, lang, argument.trim()).await?
         }
+
+        Command::TrainSpam => commands::train::handle(&bot, &msg, &state, lang, true).await?,
+
+        Command::TrainHam => commands::train::handle(&bot, &msg, &state, lang, false).await?,
     }
 
     Ok(())

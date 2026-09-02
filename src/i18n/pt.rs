@@ -15,7 +15,10 @@ Comandos:
 /stats — estatísticas de moderação do grupo
 /language <pt|en|es> — define o idioma do bot neste grupo (apenas administradores)
 /reload — recarrega moderation.toml sem reiniciar o bot (apenas administradores)
-/unban <user_id> — remove o banimento de um usuário (apenas administradores)"#,
+/unban <user_id> — remove o banimento de um usuário (apenas administradores)
+/blockdomain <dominio> — bloqueia um domínio na hora (apenas administradores)
+/trainspam — em reply a uma mensagem, ensina como spam o classificador bayesiano (apenas administradores)
+/trainham — em reply a uma mensagem, ensina como legítima o classificador bayesiano (apenas administradores)"#,
         env!("CARGO_PKG_VERSION")
     )
 }
@@ -61,6 +64,7 @@ pub const STATS_24H: &str = "Últimas 24h";
 pub const STATS_BY_TYPE: &str = "Por categoria";
 pub const STATS_TOP: &str = "Top infratores";
 pub const STATS_EMPTY: &str = "✅ Nenhuma violação registrada neste grupo ainda.";
+pub const STATS_BAYES_LEARNED: &str = "Exemplos ensinados ao classificador bayesiano";
 
 pub const RELOAD_SUCCESS: &str = "✅ Configuração de moderação recarregada com sucesso.";
 pub const RELOAD_ERROR: &str = "⚠️ Falha ao recarregar moderation.toml. As regras antigas continuam ativas. Veja os logs do bot.";
@@ -84,3 +88,19 @@ pub const BLOCKDOMAIN_NO_PERMISSION: &str = "⚠️ Apenas administradores podem
 pub const BLOCKDOMAIN_INVALID: &str =
     "⚠️ Uso: `/blockdomain <dominio>` (ex: /blockdomain spam-site.com).";
 pub const BLOCKDOMAIN_ERROR: &str = "⚠️ Falha ao bloquear o domínio. Veja os logs do bot.";
+
+pub const TRAIN_NO_PERMISSION: &str =
+    "⚠️ Apenas administradores podem ensinar o classificador de spam.";
+pub const TRAIN_MISSING_REPLY: &str =
+    "⚠️ Use `/trainspam` ou `/trainham` em *reply* a uma mensagem de texto.";
+pub const TRAIN_ERROR: &str =
+    "⚠️ Falha ao registrar o exemplo de treino. Veja os logs do bot.";
+
+pub fn train_success(is_spam: bool) -> String {
+    if is_spam {
+        "✅ Mensagem registrada como *spam*. O classificador foi retreinado agora.".to_string()
+    } else {
+        "✅ Mensagem registrada como *legítima*. O classificador foi retreinado agora."
+            .to_string()
+    }
+}

@@ -5,20 +5,7 @@ use ndarray::{Array1, Axis};
 
 use super::vectorizer::Vocabulary;
 
-/// Quantidade máxima de termos mantidos no vocabulário do
-/// bag-of-words. O dataset atual (`dataset::TRAINING_DATA`) gera bem
-/// menos termos que isso — a cap existe para quando o corpus de
-/// treino crescer (ver `TODO.md`).
-const MAX_FEATURES: usize = 8_000;
-
-/// Suavização de Laplace (aditiva) aplicada pelo Multinomial Naive
-/// Bayes — evita probabilidade zero para termos que nunca apareceram
-/// numa classe durante o treino. `1.0` é o padrão usual (add-one
-/// smoothing).
-const ALPHA: f64 = 1.0;
-
-/// Classificador Naive Bayes (Multinomial) para spam, treinado uma
-/// única vez no boot a partir do dataset embutido no binário.
+/// Classificador Naive Bayes (Multinomial) para spam.
 ///
 /// Implementado sobre `linfa` + `linfa-bayes` — os pacotes nativos
 /// do ecossistema Rust ML para esse algoritmo — em vez de um Naive
@@ -29,9 +16,14 @@ const ALPHA: f64 = 1.0;
 /// É só mais um SINAL para `engine::analyze_message` — o resultado
 /// não vira violação sozinho: o corte de confiança (`[bayes].
 /// threshold`) e o liga/desliga (`[bayes].enabled`) vivem em
-/// `config/moderation.toml`, recarregáveis via `/reload` sem precisar
-/// retreinar o modelo (o modelo em si só é treinado uma vez, no
-/// boot — ver `AppState::new`).
+/// `config/moderation.toml`, recarregáveis via `/reload`.
+///
+/// O modelo em si é treinado a partir de `bayes::seed_examples()`
+/// (dataset semente embutido no binário) somado aos exemplos
+/// ensinados por admins via `/trainspam`/`/trainham`, persistidos em
+/// `storage::sqlite` (tabela `bayes_training_examples`). `AppState`
+/// retreina o modelo no boot, em todo `/reload` e a cada exemplo
+/// novo — ver `core::state::AppState::train_bayes`.
 pub struct SpamClassifier {
     vocabulary: Vocabulary,
     model: MultinomialNb<f64, bool>,
@@ -40,18 +32,28 @@ pub struct SpamClassifier {
 impl SpamClassifier {
     /// Treina o classificador a partir de um corpus rotulado.
     ///
-    /// `examples` é uma lista de `(texto, é_spam)`. Chamado uma vez
-    /// no boot (`AppState::new`) com `dataset::TRAINING_DATA`.
+    /// `examples` é uma lista de `(texto, é_spam)`. `alpha` é a
+    /// suavização de Laplace (aditiva) do Multinomial Naive Bayes —
+    /// `1.0` é o padrão usual (add-one smoothing). `max_features` é
+    /// o número máximo de termos mantidos no vocabulário
+    /// bag-of-words — os mais frequentes no corpus são priorizados.
+    /// Ambos vêm de `[bayes]` em `moderation.toml`
+    /// (`BayesConfig::alpha`/`BayesConfig::max_features`).
     pub fn train(
-        examples: &[(&str, bool)],
+        examples: &[(String, bool)],
+        alpha: f64,
+        max_features: usize,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         if examples.is_empty() {
             return Err("dataset de treino do classificador bayesiano está vazio".into());
         }
 
-        let texts: Vec<&str> = examples.iter().map(|(text, _is_spam)| *text).collect();
+        let texts: Vec<&str> = examples
+            .iter()
+            .map(|(text, _is_spam)| text.as_str())
+            .collect();
 
-        let vocabulary = Vocabulary::build(&texts, MAX_FEATURES);
+        let vocabulary = Vocabulary::build(&texts, max_features);
 
         if vocabulary.is_empty() {
             return Err(
@@ -68,7 +70,7 @@ impl SpamClassifier {
         let dataset = Dataset::new(features, targets);
 
         let model = MultinomialNb::params()
-            .alpha(ALPHA)
+            .alpha(alpha)
             .fit(&dataset)
             .map_err(|error| format!("falha ao treinar classificador bayesiano: {error}"))?;
 
@@ -116,9 +118,19 @@ mod tests {
     use super::*;
     use crate::moderation::bayes::dataset::TRAINING_DATA;
 
+    fn owned_seed() -> Vec<(String, bool)> {
+        TRAINING_DATA
+            .iter()
+            .map(|(text, is_spam)| (text.to_string(), *is_spam))
+            .collect()
+    }
+
     #[test]
     fn classifies_obvious_spam_above_obvious_ham() {
-        let classifier = SpamClassifier::train(TRAINING_DATA).expect("treino do classificador");
+        let examples = owned_seed();
+
+        let classifier =
+            SpamClassifier::train(&examples, 1.0, 8_000).expect("treino do classificador");
 
         let spam_score = classifier.spam_probability(
             "ganhe dinheiro fácil trabalhando de casa clique no link e comece hoje",
@@ -138,8 +150,28 @@ mod tests {
 
     #[test]
     fn rejects_empty_dataset() {
-        let result = SpamClassifier::train(&[]);
+        let result = SpamClassifier::train(&[], 1.0, 8_000);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn learns_from_extra_examples() {
+        let mut examples = owned_seed();
+
+        // Termo que não existe em nenhum exemplo semente — sem essa
+        // linha extra, "xylozorp" cairia fora do vocabulário e o
+        // classificador não teria como reagir a ele.
+        examples.push((
+            "xylozorp promoção exclusiva clique agora mesmo".to_string(),
+            true,
+        ));
+
+        let classifier =
+            SpamClassifier::train(&examples, 1.0, 8_000).expect("treino do classificador");
+
+        let score = classifier.spam_probability("xylozorp promoção exclusiva");
+
+        assert!(score > 0.5, "score={score}");
     }
 }

@@ -42,7 +42,8 @@ RUN cargo binstall -y --locked \
         cargo-llvm-lines \
         cargo-tarpaulin \
         sccache \
-        git-delta
+        git-delta \
+        just
 
 # ==========================================
 # 3. Set global environment variables

@@ -15,7 +15,10 @@ Commands:
 /stats — group moderation stats
 /language <pt|en|es> — sets the bot's language for this group (admins only)
 /reload — reloads moderation.toml without restarting the bot (admins only)
-/unban <user_id> — removes a user's ban (admins only)"#,
+/unban <user_id> — removes a user's ban (admins only)
+/blockdomain <domain> — blocks a domain instantly (admins only)
+/trainspam — in reply to a message, teaches the Bayesian classifier that it's spam (admins only)
+/trainham — in reply to a message, teaches the Bayesian classifier that it's legitimate (admins only)"#,
         env!("CARGO_PKG_VERSION")
     )
 }
@@ -59,6 +62,7 @@ pub const STATS_24H: &str = "Last 24h";
 pub const STATS_BY_TYPE: &str = "By category";
 pub const STATS_TOP: &str = "Top offenders";
 pub const STATS_EMPTY: &str = "✅ No violations recorded in this group yet.";
+pub const STATS_BAYES_LEARNED: &str = "Examples taught to the Bayesian classifier";
 
 pub const RELOAD_SUCCESS: &str = "✅ Moderation config reloaded successfully.";
 pub const RELOAD_ERROR: &str =
@@ -84,3 +88,16 @@ pub const BLOCKDOMAIN_NO_PERMISSION: &str = "⚠️ Only administrators can bloc
 pub const BLOCKDOMAIN_INVALID: &str =
     "⚠️ Usage: `/blockdomain <domain>` (e.g. /blockdomain spam-site.com).";
 pub const BLOCKDOMAIN_ERROR: &str = "⚠️ Failed to block the domain. Check the bot logs.";
+
+pub const TRAIN_NO_PERMISSION: &str = "⚠️ Only administrators can train the spam classifier.";
+pub const TRAIN_MISSING_REPLY: &str =
+    "⚠️ Use `/trainspam` or `/trainham` in *reply* to a text message.";
+pub const TRAIN_ERROR: &str = "⚠️ Failed to record the training example. Check the bot logs.";
+
+pub fn train_success(is_spam: bool) -> String {
+    if is_spam {
+        "✅ Message recorded as *spam*. The classifier was retrained just now.".to_string()
+    } else {
+        "✅ Message recorded as *legitimate*. The classifier was retrained just now.".to_string()
+    }
+}

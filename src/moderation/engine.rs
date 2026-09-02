@@ -56,7 +56,7 @@ pub async fn analyze_message(
     // pouco texto não dá sinal suficiente pro modelo.
     //
     if rules.bayes.enabled && bayes::token_count(&normalized) >= rules.bayes.min_tokens {
-        let spam_probability = state.bayes.spam_probability(&normalized);
+        let spam_probability = state.bayes.read().await.spam_probability(&normalized);
 
         if spam_probability >= rules.bayes.threshold {
             log::debug!(

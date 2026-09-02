@@ -16,6 +16,13 @@ pub async fn handle(bot: &Bot, msg: &Message, state: &AppState, lang: Lang) -> R
 
     let labels = messages::stats_labels(lang);
 
+    // Contagem de exemplos ensinados ao classificador bayesiano
+    // (/trainspam e /trainham) — é um dado global do bot, não por
+    // chat, então aparece independente de o grupo já ter violação
+    // registrada ou não. Falha aqui não deveria derrubar o /stats
+    // inteiro — só omite essa linha.
+    let bayes_learned = sqlite::count_training_examples(&state.db).await.ok();
+
     let stats = match sqlite::get_chat_stats(&state.db, chat_id.0).await {
         Ok(stats) => stats,
 
@@ -35,7 +42,13 @@ pub async fn handle(bot: &Bot, msg: &Message, state: &AppState, lang: Lang) -> R
     };
 
     if stats.total == 0 {
-        bot.send_message(chat_id, labels.empty).await?;
+        let mut text = labels.empty.to_string();
+
+        if let Some(count) = bayes_learned {
+            text.push_str(&format!("\n\n🧠 {}: {count}", labels.bayes_learned));
+        }
+
+        bot.send_message(chat_id, text).await?;
 
         return Ok(());
     }
@@ -50,6 +63,10 @@ pub async fn handle(bot: &Bot, msg: &Message, state: &AppState, lang: Lang) -> R
             "• {}: {count}\n",
             escape_markdown_v2(violation_type)
         ));
+    }
+
+    if let Some(count) = bayes_learned {
+        text.push_str(&format!("\n🧠 {}: {count}\n", labels.bayes_learned));
     }
 
     if !stats.top_offenders.is_empty() {

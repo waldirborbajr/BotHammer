@@ -98,6 +98,7 @@ pub struct StatsLabels {
     pub by_type: &'static str,
     pub top: &'static str,
     pub empty: &'static str,
+    pub bayes_learned: &'static str,
 }
 
 /// Rótulos de estatísticas no idioma do chat
@@ -110,6 +111,7 @@ pub fn stats_labels(lang: Lang) -> StatsLabels {
             by_type: pt::STATS_BY_TYPE,
             top: pt::STATS_TOP,
             empty: pt::STATS_EMPTY,
+            bayes_learned: pt::STATS_BAYES_LEARNED,
         },
 
         Lang::En => StatsLabels {
@@ -119,6 +121,7 @@ pub fn stats_labels(lang: Lang) -> StatsLabels {
             by_type: en::STATS_BY_TYPE,
             top: en::STATS_TOP,
             empty: en::STATS_EMPTY,
+            bayes_learned: en::STATS_BAYES_LEARNED,
         },
 
         Lang::Es => StatsLabels {
@@ -128,6 +131,7 @@ pub fn stats_labels(lang: Lang) -> StatsLabels {
             by_type: es::STATS_BY_TYPE,
             top: es::STATS_TOP,
             empty: es::STATS_EMPTY,
+            bayes_learned: es::STATS_BAYES_LEARNED,
         },
     }
 }
@@ -228,5 +232,44 @@ pub fn blockdomain_error(lang: Lang) -> &'static str {
         Lang::Pt => pt::BLOCKDOMAIN_ERROR,
         Lang::En => en::BLOCKDOMAIN_ERROR,
         Lang::Es => es::BLOCKDOMAIN_ERROR,
+    }
+}
+
+/// Sem permissão para ensinar o classificador bayesiano
+/// (`/trainspam`/`/trainham`)
+pub fn train_no_permission(lang: Lang) -> &'static str {
+    match lang {
+        Lang::Pt => pt::TRAIN_NO_PERMISSION,
+        Lang::En => en::TRAIN_NO_PERMISSION,
+        Lang::Es => es::TRAIN_NO_PERMISSION,
+    }
+}
+
+/// `/trainspam`/`/trainham` usado sem ser em reply a uma mensagem de
+/// texto
+pub fn train_missing_reply(lang: Lang) -> &'static str {
+    match lang {
+        Lang::Pt => pt::TRAIN_MISSING_REPLY,
+        Lang::En => en::TRAIN_MISSING_REPLY,
+        Lang::Es => es::TRAIN_MISSING_REPLY,
+    }
+}
+
+/// Exemplo de treino registrado com sucesso (`is_spam` decide a
+/// mensagem: rotulado como spam ou como legítimo)
+pub fn train_success(lang: Lang, is_spam: bool) -> String {
+    match lang {
+        Lang::Pt => pt::train_success(is_spam),
+        Lang::En => en::train_success(is_spam),
+        Lang::Es => es::train_success(is_spam),
+    }
+}
+
+/// Falha ao registrar exemplo de treino
+pub fn train_error(lang: Lang) -> &'static str {
+    match lang {
+        Lang::Pt => pt::TRAIN_ERROR,
+        Lang::En => en::TRAIN_ERROR,
+        Lang::Es => es::TRAIN_ERROR,
     }
 }

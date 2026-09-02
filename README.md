@@ -32,7 +32,7 @@ The current filter is based on case-insensitive regular expressions organized by
 |---|---|
 | Pornography / sexual content | `porn`, `nudes`, `onlyfans`, `xxx`, explicit sexual terms (in Portuguese) |
 | Gambling / Betting | `bet`, `aposta`, `cassino`, `roleta`, `odds`, `bet365` |
-| Commercial spam / sales | `compre agora`, `promoção`, `desconto`, `revenda`, `frete` — plus a Naive Bayes classifier (`src/moderation/bayes/`) as a probabilistic backup for spam that doesn't match any keyword |
+| Commercial spam / sales | `compre agora`, `promoção`, `desconto`, `revenda`, `frete` — plus a Naive Bayes classifier (`src/moderation/bayes/`) as a probabilistic backup for spam that doesn't match any keyword, trainable at runtime via `/trainspam`/`/trainham` |
 | Child exploitation / CSAM | terms associated with child sexual exploitation |
 | Suspicious links | `pornhub`, `xvideos`, link shorteners (`bit.ly`, `tinyurl`) |
 
@@ -99,6 +99,13 @@ cargo run --release
 |---|---|
 | `/help` | Shows information about the bot |
 | `/status` | Confirms the bot is online and monitoring |
+| `/stats` | Shows the group's moderation stats |
+| `/language <pt\|en\|es>` | Sets the bot's language for the group (admin only) |
+| `/reload` | Reloads `moderation.toml` and retrains the Bayesian spam classifier, without restarting the bot (admin only) |
+| `/unban <user_id>` | Removes a user's ban (admin only) |
+| `/blockdomain <domain>` | Blocks a domain instantly (admin only) |
+| `/trainspam` | Reply to a message to teach the Bayesian classifier that it's spam — retrains immediately (admin only) |
+| `/trainham` | Reply to a message to teach the Bayesian classifier that it's legitimate — retrains immediately (admin only) |
 
 ## 🐳 Development environment (Dev Container)
 

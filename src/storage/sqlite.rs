@@ -81,6 +81,19 @@ async fn create_tables(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     .execute(pool)
     .await?;
 
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS bayes_training_examples (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            text TEXT NOT NULL,
+            is_spam INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
     Ok(())
 }
 
@@ -264,6 +277,66 @@ pub async fn is_trusted_user(
     let violation_count: i64 = row.get("violation_count");
 
     Ok(old_enough.unwrap_or(false) && violation_count <= max_violations)
+}
+
+/// Persiste um exemplo de treino para o classificador bayesiano de
+/// spam (`moderation::bayes`), ensinado por um admin via
+/// `/trainspam` ou `/trainham` em reply a uma mensagem real do
+/// grupo. `AppState::train_bayes` lê esses exemplos e os combina com
+/// `bayes::seed_examples()` a cada retreino.
+pub async fn insert_training_example(
+    pool: &SqlitePool,
+    text: &str,
+    is_spam: bool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        INSERT INTO bayes_training_examples(text, is_spam)
+        VALUES (?, ?)
+        "#,
+    )
+    .bind(text)
+    .bind(is_spam)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Lê todos os exemplos de treino ensinados até agora (independente
+/// de chat — o classificador é único para o bot inteiro, não por
+/// grupo, ver `AppState::bayes`).
+pub async fn get_training_examples(pool: &SqlitePool) -> Result<Vec<(String, bool)>, sqlx::Error> {
+    let rows = sqlx::query(
+        r#"
+        SELECT text, is_spam
+        FROM bayes_training_examples
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| (row.get::<String, _>("text"), row.get::<bool, _>("is_spam")))
+        .collect())
+}
+
+/// Quantos exemplos de treino já foram ensinados via
+/// `/trainspam`/`/trainham` — usado por `/stats` para mostrar o
+/// tamanho atual do dataset "aprendido" (além da semente embutida no
+/// binário).
+pub async fn count_training_examples(pool: &SqlitePool) -> Result<i64, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT COUNT(*) as c
+        FROM bayes_training_examples
+        "#,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.get::<i64, _>("c"))
 }
 
 /// Adiciona domínio bloqueado.

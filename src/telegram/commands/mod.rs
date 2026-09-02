@@ -6,6 +6,7 @@ pub mod language;
 pub mod reload;
 pub mod stats;
 pub mod status;
+pub mod train;
 pub mod unban;
 
 /// Comandos disponíveis no BanHammer
@@ -39,4 +40,14 @@ pub enum Command {
     /// Bloqueia um domínio na hora: /blockdomain <dominio>
     #[command(description = "/blockdomain <dominio> — bloqueia domínio (admin)")]
     BlockDomain(String),
+
+    /// Ensina o classificador bayesiano, em reply a uma mensagem,
+    /// que ela é spam.
+    #[command(description = "Reply a uma msg: ensina como spam (admin)")]
+    TrainSpam,
+
+    /// Ensina o classificador bayesiano, em reply a uma mensagem,
+    /// que ela é legítima.
+    #[command(description = "Reply a uma msg: ensina como legítima (admin)")]
+    TrainHam,
 }
